@@ -1,0 +1,61 @@
+// Функция для извлечения страниц комиксов
+async function fetchComicPages(urlTemplate, numPages) {
+    const cacheKey = 'comicCache';
+    let cache = JSON.parse(localStorage.getItem(cacheKey)) || {};
+    const pages = [];
+    
+    for (let i = 1; i <= numPages; i++) {
+        const pageUrl = urlTemplate.replace('{}', i);
+        
+        if (cache[pageUrl]) {
+            console.log(`Загрузка страницы из кэша: ${pageUrl}`);
+            pages.push(cache[pageUrl]);
+        } else {
+            console.log(`Загрузка страницы: ${pageUrl}`);
+            try {
+                const response = await fetch(pageUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const pageContent = await response.text();
+                
+                cache[pageUrl] = pageContent;
+                localStorage.setItem(cacheKey, JSON.stringify(cache));
+                
+                pages.push(pageContent);
+            } catch (error) {
+                console.error(`Ошибка при загрузке страницы: ${pageUrl}`, error);
+            }
+        }
+        
+        // Задержка в 2 секунды
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    return pages;
+}
+
+// Пример использования
+document.addEventListener('DOMContentLoaded', async () => {
+    // Определите URL-шаблон веб-комикса
+    const urlTemplate = 'https://example-comic.com/page/{}';
+    
+    // Количество страниц для извлечения
+    const numPages = 10;
+    
+    try {
+        const pages = await fetchComicPages(urlTemplate, numPages);
+        
+        // Пример обработки полученных страниц
+        pages.forEach((pageContent, index) => {
+            // Вы можете обрабатывать содержимое страницы здесь
+            console.log(`Страница ${index + 1}:`);
+            console.log(pageContent);
+            
+            // Выводим содержимое страницы в элемент HTML, например, в <pre>
+            const preElement = document.createElement('pre');
+            preElement.textContent = pageContent;
+            document.body.appendChild(preElement);
+        });
+    } catch (error) {
+        console.error('Ошибка при извлечении страниц комикса:', error);
+    }
+});
